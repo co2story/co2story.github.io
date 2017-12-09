@@ -1,0 +1,23 @@
+{
+	"countries": [
+		{
+			"name": "United Stated",
+			"countryCode": "USA",
+			"co2": 2000000
+		},
+		{
+			"name": "Italy",
+			"countryCode": "ITA",
+			"co2": 200000
+		},
+		{
+			"name": "Canada",
+			"countryCode": "CAN",
+			"co2": 600000
+		},
+		{
+			"name": "India",
+			"countryCode": "IND",
+			"co2": 400000
+		}]
+}

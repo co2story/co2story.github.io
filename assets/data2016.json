@@ -1,0 +1,13 @@
+{
+	"countries": [
+		{
+			"name": "United Stated",
+			"countryCode": "USA",
+			"co2": 600000
+		},
+		{
+			"name": "China",
+			"countryCode": "CHN",
+			"co2": 8000000
+		}]
+}

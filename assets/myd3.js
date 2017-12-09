@@ -1,48 +1,92 @@
-function shadeColor1(color, percent) {  // deprecated. See below.
-  var num = parseInt(color.slice(1),16), amt = Math.round(2.55 * percent), R = (num >> 16) + amt, G = (num >> 8 & 0x00FF) + amt, B = (num & 0x0000FF) + amt;
-  return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+function maxOf(array) {
+  let max = 0;
+  for (let i = 0; i < array.length; i++) {
+    if (array[i].co2 > max) {
+      max = array[i].co2;
+    }
+  }
+  return max;
+}
+
+function minOf(array, maxi) {
+  let max = maxi;
+  for (let i = 0; i < array.length; i++) {
+    if (array[i].co2 < max) {
+      max = array[i].co2;
+    }
+  }
+  return max;
+}
+
+const numberWithCommas = (x) => {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 }
 
 let x = new XMLHttpRequest();
-let doc = {};
-x.open("GET", "assets/test.xml", true);
-x.onreadystatechange = function () {
-  if (x.readyState == 4 && x.status == 200)
-  {
-    doc = x.responseXML;
-  }
-};
-x.send(null);
-
-const defaultC = '#ABDDA4';
+const defaultC = '#F8E0E0';
 
 let map = new Datamap({
   element: document.getElementById('map'),
   projection: 'mercator',
   fills: {
-    defaultFill: "#ABDDA4",
-    authorHasTraveledTo: "#fa0fa0"
+    defaultFill: "#BDBDBD",
   },
-  data: {
-    USA: { fillKey: "authorHasTraveledTo" },
-    JPN: { fillKey: "authorHasTraveledTo" },
-    ITA: { fillKey: "authorHasTraveledTo" },
-    CN: { fillKey: "authorHasTraveledTo" },
-    KOR: { fillKey: "authorHasTraveledTo" },
-    DEU: { fillKey: "authorHasTraveledTo" },
+  geographyConfig: {
+    borderColor: '#DEDEDE',
+    highlightBorderWidth: 2,
+    // don't change color on mouse hover
+    highlightFillColor: function(geo) {
+        return geo['fillColor'] || '#F5F5F5';
+    },
+    // only change border
+    highlightBorderColor: '#B7B7B7',
+    // show desired information in tooltip
+    popupTemplate: function(geo, data) {
+        // don't show tooltip if country don't present in dataset
+        if (!data) { return ; }
+        // tooltip content
+        return ['<div class="hoverinfo">',
+            '<strong>', geo.properties.name, '</strong>',
+            '<br>CO2 emission (kt): <strong>', numberWithCommas(data.numberOfThings), '</strong>',
+            '</div>'].join('');
+    }
   }
 });
 
-var colors = d3.scale.category10();
+function updateMap(currentY) {
+  map.updateChoropleth(null, {reset: true});
+  let doc = {};
+  let objCountry = {};
+  x.open("GET", `assets/data${currentY}.json`, true);
+  x.onreadystatechange = function () {
+    if (x.readyState == 4 && x.status == 200)
+    {
+      doc = JSON.parse(x.responseText);
+      const maxCo2 = maxOf(doc.countries);
+      const minCo2 = minOf(doc.countries, maxCo2);
 
-window.setInterval(function() {
-  map.updateChoropleth({
-    USA: shadeColor1(defaultC, Math.random() * -20),
-    RUS: shadeColor1(defaultC, Math.random() * -20),
-    AUS: shadeColor1(defaultC, Math.random() * -20),
-    BRA: shadeColor1(defaultC, Math.random() * -20),
-    CAN: shadeColor1(defaultC, Math.random() * -20),
-    CHN: shadeColor1(defaultC, Math.random() * -20),
-    IND: shadeColor1(defaultC, Math.random() * -20)
-  });
-}, 2000);
+      // create color palette function
+      // color can be whatever you wish
+      let paletteScale = d3.scale.linear()
+      .domain([minCo2,maxCo2])
+      .range(["#EFEFFF","#02386F"]); // blue color
+
+      for (let i = 0; i < doc.countries.length; i++) {
+        objCountry[doc.countries[i].countryCode] =  { numberOfThings: doc.countries[i].co2, fillColor: paletteScale(doc.countries[i].co2) };
+      }
+      map.updateChoropleth(objCountry);
+    }
+  };
+  x.send();
+}
+
+updateMap(2017);
+var slider = document.getElementById("myRange");
+var output = document.getElementById("curYear");
+output.innerHTML = slider.value; // Display the default slider value
+
+// Update the current slider value (each time you drag the slider handle)
+slider.oninput = function() {
+    output.innerHTML = this.value;
+    updateMap(this.value);
+}
