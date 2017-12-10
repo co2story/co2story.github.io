@@ -95,6 +95,24 @@ function updateMap(currentY) {
   }
 }
 
+function prepareChart(x, y, valueline, xAxis, yAxis, svg, height, dataClean) {
+  x.domain(d3.extent(dataClean, function(d) { return d.year; }));
+  y.domain([0, d3.max(dataClean, function(d) { return d.value; })]);
+
+  svg.append("path")
+      .attr("class", "line")
+      .attr("d", valueline(dataClean));
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+}
+
 function createLineChart(country) {
   var margin = {top: 30, right: 20, bottom: 30, left: 50},
   width = 600 - margin.left - margin.right,
@@ -122,30 +140,20 @@ function createLineChart(country) {
       .attr("transform", 
             "translate(" + margin.left + "," + margin.top + ")");
 
-  d3.json(`https://stark-tor-75212.herokuapp.com/api/co2/country?country=${country}`, function(error, data) {
-    dataClean = [];
-    data.forEach(function(d) {
-      if(d.value !== null) {
-        dataClean.push({year: d.year, value: d.value});
-      }
+  if (dataSaver[`${country}`] === undefined) {
+    d3.json(`https://stark-tor-75212.herokuapp.com/api/co2/country?country=${country}`, function(error, data) {
+      dataClean = [];
+      data.forEach(function(d) {
+        if(d.value !== null) {
+          dataClean.push({year: d.year, value: d.value});
+        }
+      });
+      dataSaver[`${country}`] = dataClean;
+      prepareChart(x, y, valueline, xAxis, yAxis, svg, height, dataClean);
     });
-
-    x.domain(d3.extent(dataClean, function(d) { return d.year; }));
-    y.domain([0, d3.max(dataClean, function(d) { return d.value; })]);
-
-    svg.append("path")
-        .attr("class", "line")
-        .attr("d", valueline(dataClean));
-
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
-    });
+  } else {
+    prepareChart(x, y, valueline, xAxis, yAxis, svg, height, dataSaver[`${country}`]);
+  }
 }
 
 updateMap(2014);
