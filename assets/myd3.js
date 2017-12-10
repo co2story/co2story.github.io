@@ -57,7 +57,7 @@ function updateMap(currentY) {
   map.updateChoropleth(null, {reset: true});
   let doc = {};
   let objCountry = {};
-  x.open("GET", `http://stark-tor-75212.herokuapp.com/api/co2/year?year=${currentY}`, true);
+  x.open("GET", `https://stark-tor-75212.herokuapp.com/api/co2/year?year=${currentY}`, true);
   x.onreadystatechange = function () {
     if (x.readyState == 4 && x.status == 200)
     {
