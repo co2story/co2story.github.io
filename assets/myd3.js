@@ -53,36 +53,46 @@ let map = new Datamap({
   }
 });
 
-function updateMap(currentY) {
-  map.updateChoropleth(null, {reset: true});
-  let doc = {};
+dataSaver = {};
+
+function prepareMap(doc) {
   let objCountry = {};
-  x.open("GET", `https://stark-tor-75212.herokuapp.com/api/co2/year?year=${currentY}`, true);
-  x.onreadystatechange = function () {
-    if (x.readyState == 4 && x.status == 200)
-    {
-      doc = JSON.parse(x.responseText);
-      const maxCo2 = maxOf(doc);
-      const minCo2 = minOf(doc, maxCo2);
+  const maxCo2 = maxOf(doc);
+  const minCo2 = minOf(doc, maxCo2);
 
-      // create color palette function
-      // color can be whatever you wish
-      if (minCo2 != 0 && maxCo2 != 0) {
-        let paletteScale = d3.scale.linear()
-        .domain([minCo2,maxCo2])
-        .range(["#E0E0F8","#08088A"]); // blue color
+  // create color palette function
+  // color can be whatever you wish
+  if (minCo2 != 0 && maxCo2 != 0) {
+    let paletteScale = d3.scale.linear()
+    .domain([minCo2,maxCo2])
+    .range(["#E0E0F8","#08088A"]); // blue color
 
-        for (let i = 0; i < doc.length; i++) {
-          if (doc[i].countryCode !== "" && doc[i].value !== null) {
-            objCountry[doc[i].countryCode] =  { numberOfThings: doc[i].value, fillColor: paletteScale(doc[i].value) };
-          }
-        }
-        map.updateChoropleth(objCountry);
+    for (let i = 0; i < doc.length; i++) {
+      if (doc[i].countryCode !== "" && doc[i].value !== null) {
+        objCountry[doc[i].countryCode] =  { numberOfThings: doc[i].value, fillColor: paletteScale(doc[i].value) };
       }
     }
-  };
-  x.send();
+    map.updateChoropleth(objCountry);
+  }
+}
 
+function updateMap(currentY) {
+  let doc = {};
+  map.updateChoropleth(null, {reset: true});
+  if(dataSaver[`${currentY}`] === undefined) {
+    x.open("GET", `https://stark-tor-75212.herokuapp.com/api/co2/year?year=${currentY}`, true);
+    x.onreadystatechange = function () {
+      if (x.readyState == 4 && x.status == 200)
+      {
+        doc = JSON.parse(x.responseText);
+        dataSaver[`${currentY}`] = doc;
+        prepareMap(doc);
+      }
+    };
+    x.send();
+  } else {
+    prepareMap(dataSaver[`${currentY}`]);
+  }
 }
 
 function createLineChart(country) {
