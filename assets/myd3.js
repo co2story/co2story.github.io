@@ -123,6 +123,7 @@ function createLineChart(country) {
   var y = d3.scale.linear().range([height, 0]);
 
   var xAxis = d3.svg.axis().scale(x)
+  .tickFormat(function(d) { return d.year; })
   .orient("bottom").ticks(8);
 
   var yAxis = d3.svg.axis().scale(y)
