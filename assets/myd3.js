@@ -1,21 +1,21 @@
 function maxOf(array) {
   let max = 0;
   for (let i = 0; i < array.length; i++) {
-    if (array[i].co2 > max) {
-      max = array[i].co2;
+    if (array[i].value > max) {
+      max = array[i].value;
     }
   }
   return max;
 }
 
 function minOf(array, maxi) {
-  let max = maxi;
+  let min = maxi;
   for (let i = 0; i < array.length; i++) {
-    if (array[i].co2 < max) {
-      max = array[i].co2;
+    if (array[i].value < min) {
+      min = array[i].value;
     }
   }
-  return max;
+  return min;
 }
 
 const numberWithCommas = (x) => {
@@ -57,30 +57,34 @@ function updateMap(currentY) {
   map.updateChoropleth(null, {reset: true});
   let doc = {};
   let objCountry = {};
-  x.open("GET", `assets/data${currentY}.json`, true);
+  x.open("GET", `http://stark-tor-75212.herokuapp.com/api/co2/year?year=${currentY}`, true);
   x.onreadystatechange = function () {
     if (x.readyState == 4 && x.status == 200)
     {
       doc = JSON.parse(x.responseText);
-      const maxCo2 = maxOf(doc.countries);
-      const minCo2 = minOf(doc.countries, maxCo2);
+      const maxCo2 = maxOf(doc);
+      const minCo2 = minOf(doc, maxCo2);
 
       // create color palette function
       // color can be whatever you wish
-      let paletteScale = d3.scale.linear()
-      .domain([minCo2,maxCo2])
-      .range(["#EFEFFF","#02386F"]); // blue color
+      if (minCo2 != 0 && maxCo2 != 0) {
+        let paletteScale = d3.scale.linear()
+        .domain([minCo2,maxCo2])
+        .range(["#E0E0F8","#08088A"]); // blue color
 
-      for (let i = 0; i < doc.countries.length; i++) {
-        objCountry[doc.countries[i].countryCode] =  { numberOfThings: doc.countries[i].co2, fillColor: paletteScale(doc.countries[i].co2) };
+        for (let i = 0; i < doc.length; i++) {
+          if (doc[i].countryCode !== "" && doc[i].value !== null) {
+            objCountry[doc[i].countryCode] =  { numberOfThings: doc[i].value, fillColor: paletteScale(doc[i].value) };
+          }
+        }
+        map.updateChoropleth(objCountry);
       }
-      map.updateChoropleth(objCountry);
     }
   };
   x.send();
 }
 
-updateMap(2017);
+updateMap(2014);
 var slider = document.getElementById("myRange");
 var output = document.getElementById("curYear");
 output.innerHTML = slider.value; // Display the default slider value
